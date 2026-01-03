@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { api } from '../utils/api';
 
 function Complaint() {
     const [inputMethod, setInputMethod] = useState('text'); // 'text' or 'voice'
@@ -89,16 +90,34 @@ function Complaint() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const [isLoading, setIsLoading] = useState(false);
+
     // Handle form submission
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log({
-            method: inputMethod,
-            text: textInput,
-            audio: audioURL,
-            images: uploadedImages
-        });
-        alert('Complaint submitted successfully!');
+        setIsLoading(true);
+        try {
+            const complaintData = {
+                description: textInput || "Voice recording submitted",
+                location: "Mock Location", // In a real app, this would be from GPS or user input
+                category: "", // Backend AI will classify this, but we can send empty for now
+            };
+
+            const result = await api.submitComplaint(complaintData);
+            console.log('Submission result:', result);
+            alert(`Complaint submitted successfully! Category: ${result.category}, Severity: ${result.severity}`);
+
+            // Clear form
+            setTextInput('');
+            setAudioURL(null);
+            setUploadedImages([]);
+            setInputMethod('text');
+        } catch (error) {
+            console.error('Error submitting complaint:', error);
+            alert('Failed to submit complaint. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -260,9 +279,10 @@ function Complaint() {
 
                     <button
                         type="submit"
-                        className="w-full py-4 px-8 bg-black text-white text-lg font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:bg-gray-900"
+                        disabled={isLoading}
+                        className="w-full py-4 px-8 bg-black text-white text-lg font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:bg-gray-900 disabled:opacity-50"
                     >
-                        Submit Complaint
+                        {isLoading ? 'Submitting...' : 'Submit Complaint'}
                     </button>
                 </form>
             </div>

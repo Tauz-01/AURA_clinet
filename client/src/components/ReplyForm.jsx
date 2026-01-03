@@ -37,10 +37,9 @@ function ReplyForm({ issue, onClose, onSubmit }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-5 md:space-y-6">
-                    {/* Original Complaint Summary */}
                     <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100/50">
                         <p className="text-xs font-bold text-gray-400 uppercase mb-1 tracking-widest">Original Issue</p>
-                        <p className="text-gray-700 text-sm italic font-medium leading-relaxed">"{issue.title}"</p>
+                        <p className="text-gray-700 text-sm italic font-medium leading-relaxed">"{issue.description}"</p>
                     </div>
 
                     {/* Status Selection */}

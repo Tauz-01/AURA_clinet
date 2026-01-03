@@ -1,30 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ComplaintMap from '../components/ComplaintMap';
 import ReplyForm from '../components/ReplyForm';
+import { api } from '../utils/api';
 
 function InfrastructureDepartmentDashboard() {
-    // Mock data for Infrastructure Department
-    const [grievances] = useState([
-        { id: 1, title: "Pothole on Main Street", area: "North Zone", category: "Roads", priority: "high", status: "in-progress", date: "2026-01-03" },
-        { id: 2, title: "Street Light Not Working", area: "East Zone", category: "Streetlights", priority: "medium", status: "submitted", date: "2026-01-03" },
-        { id: 3, title: "Building Collapse Risk", area: "South Zone", category: "Buildings", priority: "high", status: "reviewed", date: "2026-01-02" },
-        { id: 4, title: "Drainage Blockage", area: "West Zone", category: "Drainage", priority: "high", status: "in-progress", date: "2026-01-02" },
-        { id: 5, title: "Park Equipment Broken", area: "Central Zone", category: "Parks", priority: "low", status: "submitted", date: "2026-01-01" },
-        { id: 6, title: "Road Cracks - Highway", area: "North Zone", category: "Roads", priority: "high", status: "submitted", date: "2025-12-31" },
-        { id: 7, title: "Multiple Streetlights Out", area: "East Zone", category: "Streetlights", priority: "medium", status: "in-progress", date: "2025-12-30" },
-        { id: 8, title: "Illegal Construction", area: "South Zone", category: "Buildings", priority: "high", status: "reviewed", date: "2025-12-29" },
-        { id: 9, title: "Sewage Overflow", area: "West Zone", category: "Drainage", priority: "high", status: "in-progress", date: "2025-12-28" },
-        { id: 10, title: "Park Maintenance Needed", area: "Central Zone", category: "Parks", priority: "low", status: "resolved", date: "2025-12-27" },
-        { id: 11, title: "Bridge Safety Concern", area: "North Zone", category: "Roads", priority: "high", status: "submitted", date: "2025-12-26" },
-        { id: 12, title: "Streetlight Pole Damaged", area: "East Zone", category: "Streetlights", priority: "medium", status: "in-progress", date: "2025-12-25" },
-        { id: 13, title: "Building Permit Violation", area: "South Zone", category: "Buildings", priority: "medium", status: "reviewed", date: "2025-12-24" },
-        { id: 14, title: "Drain Cover Missing", area: "West Zone", category: "Drainage", priority: "high", status: "submitted", date: "2025-12-23" },
-        { id: 15, title: "Footpath Repair Needed", area: "North Zone", category: "Roads", priority: "medium", status: "in-progress", date: "2025-12-22" },
-        { id: 16, title: "Park Gate Broken", area: "Central Zone", category: "Parks", priority: "low", status: "submitted", date: "2025-12-21" },
-        { id: 17, title: "Road Widening Required", area: "East Zone", category: "Roads", priority: "medium", status: "reviewed", date: "2025-12-20" }
-    ]);
+    const [grievances, setGrievances] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchGrievances = async () => {
+            try {
+                // Fetch all and filter for demonstration
+                const allData = await api.getAllComplaints();
+                // Filter for Infrastructure related categories (Roads, Buildings, etc.)
+                const infraCategories = ['roads', 'streetlights', 'buildings', 'drainage', 'parks', 'infrastructure'];
+                setGrievances(allData.filter(g =>
+                    infraCategories.includes(g.category?.toLowerCase()) ||
+                    g.category?.toLowerCase() === 'infrastructure'
+                ));
+            } catch (error) {
+                console.error('Error fetching grievances:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchGrievances();
+    }, []);
 
     // Calculate statistics
 
@@ -66,6 +69,14 @@ function InfrastructureDepartmentDashboard() {
         if (count >= 1) return '#FCD34D'; // Yellow - Low-Medium
         return '#10B981'; // Green - Safe
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-2xl font-bold animate-pulse text-orange-600">Loading Infrastructure Grievances...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-4 md:p-8">
@@ -150,15 +161,15 @@ function InfrastructureDepartmentDashboard() {
                             {criticalIssues.map((issue) => (
                                 <div key={issue.id} className="p-4 bg-red-50/50 border-l-4 border-red-500 rounded-r-lg hover:bg-red-50 transition-colors">
                                     <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-gray-800 text-sm leading-tight">{issue.title}</h3>
-                                        <span className="shrink-0 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">HIGH</span>
+                                        <h3 className="font-bold text-gray-800 text-sm leading-tight">{issue.description.substring(0, 50)}...</h3>
+                                        <span className="shrink-0 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{issue.severity?.toUpperCase() || 'HIGH'}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-3 text-[11px] text-gray-500 mb-3">
-                                        <span className="flex items-center gap-1">📍 {issue.area}</span>
-                                        <span className="flex items-center gap-1">📅 {new Date(issue.date).toLocaleDateString()}</span>
+                                        <span className="flex items-center gap-1">📍 {issue.location || 'Unknown'}辨</span>
+                                        <span className="flex items-center gap-1">🏷️ {issue.category}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <Link className='text-blue-600 text-xs font-semibold hover:underline decoration-2 underline-offset-4 tracking-tight'>VIEW DETAILS</Link>
+                                        <span className='text-blue-600 text-xs font-semibold tracking-tight uppercase'>{issue.status}</span>
                                         <button
                                             onClick={() => setSelectedGrievance(issue)}
                                             className="bg-black text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-800 transition transform active:scale-95 shadow-md"
@@ -215,9 +226,20 @@ function InfrastructureDepartmentDashboard() {
                 <ReplyForm
                     issue={selectedGrievance}
                     onClose={() => setSelectedGrievance(null)}
-                    onSubmit={(data) => {
-                        console.log('Reply submitted:', data);
-                        alert(`Reply sent for Issue #${data.id}`);
+                    onSubmit={async (data) => {
+                        try {
+                            await api.updateComplaintStatus(data.id, data.status);
+                            alert(`Status updated for Issue #${data.id} to ${data.status}`);
+                            // Refresh logic
+                            const allData = await api.getAllComplaints();
+                            const infraCategories = ['roads', 'streetlights', 'buildings', 'drainage', 'parks', 'infrastructure'];
+                            setGrievances(allData.filter(g =>
+                                infraCategories.includes(g.category?.toLowerCase()) ||
+                                g.category?.toLowerCase() === 'infrastructure'
+                            ));
+                        } catch (error) {
+                            alert('Failed to update status');
+                        }
                         setSelectedGrievance(null);
                     }}
                 />

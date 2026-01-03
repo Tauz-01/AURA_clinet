@@ -1,70 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../utils/api';
 
 function Dashboard() {
-    // Mock data - In production, this would come from an API
-    const [complaints] = useState([
-        {
-            id: 1,
-            title: "Water Supply Issue",
-            description: "No water supply in my area for the past 3 days",
-            status: "in-progress",
-            inputType: "text",
-            priority: "high",
-            date: "2026-01-01",
-            category: "Water"
-        },
-        {
-            id: 2,
-            title: "Street Light Not Working",
-            description: "Street light near park has been broken for a week",
-            status: "submitted",
-            inputType: "voice",
-            priority: "medium",
-            date: "2026-01-02",
-            category: "Infrastructure"
-        },
-        {
-            id: 3,
-            title: "Garbage Collection Delay",
-            description: "Garbage has not been collected for 5 days",
-            status: "reviewed",
-            inputType: "text",
-            priority: "high",
-            date: "2025-12-28",
-            category: "Sanitation"
-        },
-        {
-            id: 4,
-            title: "Road Pothole",
-            description: "Large pothole on main road causing accidents",
-            status: "resolved",
-            inputType: "voice",
-            priority: "high",
-            date: "2025-12-25",
-            category: "Roads"
-        },
-        {
-            id: 5,
-            title: "Park Maintenance",
-            description: "Park equipment needs repair and maintenance",
-            status: "in-progress",
-            inputType: "text",
-            priority: "low",
-            date: "2025-12-30",
-            category: "Parks"
-        },
-        {
-            id: 6,
-            title: "Noise Pollution",
-            description: "Construction noise during late night hours",
-            status: "submitted",
-            inputType: "voice",
-            priority: "medium",
-            date: "2026-01-03",
-            category: "Environment"
-        }
-    ]);
+    const [complaints, setComplaints] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchComplaints = async () => {
+            try {
+                const data = await api.getAllComplaints();
+                setComplaints(data);
+            } catch (error) {
+                console.error('Error fetching complaints:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchComplaints();
+    }, []);
 
     // Calculate statistics
     const totalComplaints = complaints.length;
@@ -131,6 +85,13 @@ function Dashboard() {
             </span>
         );
     };
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-2xl font-bold animate-pulse">Loading Complaints...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -209,15 +170,11 @@ function Dashboard() {
                             {/* Card Header */}
                             <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 border-b border-gray-200">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="text-lg font-bold text-gray-800 flex-1">{complaint.title}</h3>
+                                    <h3 className="text-lg font-bold text-gray-800 flex-1">{complaint.category || "General Complaint"}</h3>
                                     <span className="text-xs text-gray-500 ml-2">#{complaint.id}</span>
                                 </div>
                                 <p className="text-xs text-gray-500">
-                                    📅 {new Date(complaint.date).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric'
-                                    })}
+                                    📍 {complaint.location || "Unknown"}
                                 </p>
                             </div>
 
@@ -228,7 +185,7 @@ function Dashboard() {
                                 {/* Category */}
                                 <div className="mb-3">
                                     <span className="text-xs text-gray-500">Category: </span>
-                                    <span className="text-sm font-semibold text-gray-700">{complaint.category}</span>
+                                    <span className="text-sm font-semibold text-gray-700">{complaint.category || "Unclassified"}</span>
                                 </div>
 
                                 {/* Badges */}
@@ -236,19 +193,13 @@ function Dashboard() {
                                     {/* Status */}
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-gray-500 w-16">Status:</span>
-                                        {getStatusBadge(complaint.status)}
+                                        {getStatusBadge(complaint.status?.toLowerCase() || 'submitted')}
                                     </div>
 
                                     {/* Priority */}
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-gray-500 w-16">Priority:</span>
-                                        {getPriorityBadge(complaint.priority)}
-                                    </div>
-
-                                    {/* Input Type */}
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-500 w-16">Type:</span>
-                                        {getInputTypeBadge(complaint.inputType)}
+                                        {getPriorityBadge(complaint.severity?.toLowerCase() || 'medium')}
                                     </div>
                                 </div>
                             </div>

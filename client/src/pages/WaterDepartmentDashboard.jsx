@@ -1,28 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ComplaintMap from '../components/ComplaintMap';
 import ReplyForm from '../components/ReplyForm';
+import { api } from '../utils/api';
 
 function WaterDepartmentDashboard() {
-    // Mock data for Water Department
-    const [grievances] = useState([
-        { id: 1, title: "No Water Supply - Sector 12", area: "North Zone", category: "Water Supply", priority: "high", status: "in-progress", date: "2026-01-03" },
-        { id: 2, title: "Contaminated Water", area: "East Zone", category: "Water Quality", priority: "high", status: "submitted", date: "2026-01-03" },
-        { id: 3, title: "Low Water Pressure", area: "South Zone", category: "Pressure Issues", priority: "medium", status: "reviewed", date: "2026-01-02" },
-        { id: 4, title: "Pipeline Leakage - Main Road", area: "West Zone", category: "Leakage", priority: "high", status: "in-progress", date: "2026-01-02" },
-        { id: 5, title: "Billing Error", area: "Central Zone", category: "Billing", priority: "low", status: "submitted", date: "2026-01-01" },
-        { id: 6, title: "Water Supply Timing Issue", area: "North Zone", category: "Water Supply", priority: "medium", status: "resolved", date: "2025-12-31" },
-        { id: 7, title: "Dirty Water from Tap", area: "East Zone", category: "Water Quality", priority: "high", status: "submitted", date: "2025-12-30" },
-        { id: 8, title: "Broken Water Meter", area: "South Zone", category: "Billing", priority: "low", status: "in-progress", date: "2025-12-29" },
-        { id: 9, title: "Underground Pipe Burst", area: "North Zone", category: "Leakage", priority: "high", status: "reviewed", date: "2025-12-28" },
-        { id: 10, title: "Irregular Water Supply", area: "West Zone", category: "Water Supply", priority: "medium", status: "submitted", date: "2025-12-27" },
-        { id: 11, title: "High Water Pressure Damage", area: "Central Zone", category: "Pressure Issues", priority: "medium", status: "resolved", date: "2025-12-26" },
-        { id: 12, title: "Water Tank Overflow", area: "East Zone", category: "Leakage", priority: "medium", status: "in-progress", date: "2025-12-25" },
-        { id: 13, title: "No Water for 3 Days", area: "North Zone", category: "Water Supply", priority: "high", status: "submitted", date: "2025-12-24" },
-        { id: 14, title: "Rusty Water Color", area: "South Zone", category: "Water Quality", priority: "high", status: "in-progress", date: "2025-12-23" },
-        { id: 15, title: "Meter Reading Incorrect", area: "West Zone", category: "Billing", priority: "low", status: "reviewed", date: "2025-12-22" }
-    ]);
+    const [grievances, setGrievances] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchGrievances = async () => {
+            try {
+                // Fetch all and filter for demonstration, or use the filter API
+                const data = await api.getFilteredComplaints({ category: 'Water' });
+                setGrievances(data);
+            } catch (error) {
+                console.error('Error fetching grievances:', error);
+                // Fallback to all complaints if filter fails or returns empty
+                try {
+                    const allData = await api.getAllComplaints();
+                    setGrievances(allData.filter(g => g.category?.toLowerCase().includes('water')));
+                } catch (e) {
+                    console.error('Fallback failed:', e);
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchGrievances();
+    }, []);
 
     // Calculate statistics
     const totalGrievances = grievances.length;
@@ -62,6 +69,14 @@ function WaterDepartmentDashboard() {
         if (count >= 1) return '#FCD34D'; // Yellow - Low-Medium
         return '#10B981'; // Green - Safe
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-2xl font-bold animate-pulse">Loading Water Grievances...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 p-4 md:p-8">
@@ -146,15 +161,15 @@ function WaterDepartmentDashboard() {
                             {criticalIssues.map((issue) => (
                                 <div key={issue.id} className="p-4 bg-red-50/50 border-l-4 border-red-500 rounded-r-lg hover:bg-red-50 transition-colors">
                                     <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-gray-800 text-sm leading-tight">{issue.title}</h3>
-                                        <span className="shrink-0 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">HIGH</span>
+                                        <h3 className="font-bold text-gray-800 text-sm leading-tight">{issue.description.substring(0, 50)}...</h3>
+                                        <span className="shrink-0 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">{issue.severity?.toUpperCase() || 'HIGH'}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-3 text-[11px] text-gray-500 mb-3">
-                                        <span className="flex items-center gap-1">📍 {issue.area}</span>
-                                        <span className="flex items-center gap-1">📅 {new Date(issue.date).toLocaleDateString()}</span>
+                                        <span className="flex items-center gap-1">📍 {issue.location || 'Unknown'}辨</span>
+                                        <span className="flex items-center gap-1">🏷️ {issue.category}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <Link className='text-blue-600 text-xs font-semibold hover:underline decoration-2 underline-offset-4 tracking-tight'>VIEW DETAILS</Link>
+                                        <span className='text-blue-600 text-xs font-semibold tracking-tight uppercase'>{issue.status}</span>
                                         <button
                                             onClick={() => setSelectedGrievance(issue)}
                                             className="bg-black text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-800 transition transform active:scale-95 shadow-md"
@@ -211,9 +226,16 @@ function WaterDepartmentDashboard() {
                 <ReplyForm
                     issue={selectedGrievance}
                     onClose={() => setSelectedGrievance(null)}
-                    onSubmit={(data) => {
-                        console.log('Reply submitted:', data);
-                        alert(`Reply sent for Issue #${data.id}`);
+                    onSubmit={async (data) => {
+                        try {
+                            await api.updateComplaintStatus(data.id, data.status);
+                            alert(`Status updated for Issue #${data.id} to ${data.status}`);
+                            // Refresh logic
+                            const updated = await api.getFilteredComplaints({ category: 'Water' });
+                            setGrievances(updated);
+                        } catch (error) {
+                            alert('Failed to update status');
+                        }
                         setSelectedGrievance(null);
                     }}
                 />
